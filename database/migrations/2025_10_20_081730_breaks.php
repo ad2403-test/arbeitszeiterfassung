@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('breaks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('work_log_id')->constrained()->onDelete('cascade'); // Link to the work log
+            $table->foreignId('work_log_id')->constrained()->onDelete('cascade'); 
             $table->timestamp('start_time')->nullable();
             $table->timestamp('end_time')->nullable();
             $table->text('note')->nullable();

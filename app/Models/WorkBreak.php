@@ -10,8 +10,7 @@ class WorkBreak extends Model
 
     protected $fillable = ['work_log_id', 'start_time', 'end_time', 'note'];
 
-    public function workLog()
-    {
+    public function workLog()   {
         return $this->belongsTo(WorkLog::class);
     }
 }

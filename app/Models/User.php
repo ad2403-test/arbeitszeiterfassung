@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use PragmaRX\Google2FA\Google2FA;
 
 class User extends Authenticatable
 {
@@ -24,6 +25,10 @@ class User extends Authenticatable
         'email',
         'role',
         'password',
+        'rfid_uid',
+         'two_factor_secret',
+        'two_factor_enabled',
+        'two_factor_verified',
     ];
 
     /**
@@ -33,6 +38,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+         'google2fa_secret',
         'remember_token',
     ];
 
@@ -41,21 +47,35 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
+    protected function casts(): array  {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
 
-    public function isAdmin(): bool
-    {
+    public function isAdmin(): bool {
         return $this->role === 'admin';
     }
 
-    public function isUser(): bool
-    {
+    public function isUser(): bool {
         return $this->role === 'user';
     }
+
+    public function workLogs(){
+        return $this->hasMany(WorkLog::class);
+    }
+
+    public function generate2FASecret()
+    {
+        $this->google2fa_secret = app(Google2FA::class)->generateSecretKey();
+        $this->save();
+    }
+
+    // app/Models/User.php
+    public function vacations()
+    {
+        return $this->hasMany(Vacation::class);
+    }
+
 }

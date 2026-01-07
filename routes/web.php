@@ -2,14 +2,134 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LogController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TerminalController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\TwoFactorController;
+use App\Http\Controllers\VacationController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/login', [AuthController::class, 'index']);
-Route::post('/login', [AuthController::class, 'login'])->name('login');
+/*
+|--------------------------------------------------------------------------
+| Public routes
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/', function () {
+    return redirect()->route('login');
+});
+
+Route::get('/login', [AuthController::class, 'index'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+/*
+|--------------------------------------------------------------------------
+| 2FA challenge (must be accessible AFTER login but BEFORE dashboard)
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('users.dashboard');
-    Route::get('/user/management', [UserManagementController::class,'index'])->name('admin.user.management');
+    Route::get('/2fa/challenge', [TwoFactorController::class, 'challenge'])
+        ->name('2fa.challenge');
+
+    Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])
+        ->name('2fa.verify');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Protected routes (auth + 2FA)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', '2fa'])->group(function () {
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('users.dashboard');
+
+    Route::get('/dashboard/export', [UserManagementController::class, 'export'])
+        ->name('users.dashboard.export');
+
+    Route::get('/settings', [SettingsController::class, 'edit'])
+        ->name('users.settings');
+
+    Route::put('/settings', [SettingsController::class, 'update'])
+        ->name('users.settings.update');
+
+// routes/web.php (inside auth+2fa middleware)
+    Route::get('/vacation', [VacationController::class, 'index'])->name('users.vacation');
+    Route::get('/vacation/create', [VacationController::class, 'create'])->name('users.vacation.create');
+    Route::post('/vacation', [VacationController::class, 'store'])->name('users.vacation.store');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2FA setup (user settings)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/2fa/setup', [TwoFactorController::class, 'setup'])->name('2fa.setup');
+    Route::post('/2fa/enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin-only routes
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('admin')->group(function () {
+
+        Route::get('/user/management', [UserManagementController::class, 'index'])
+            ->name('admin.user.management');
+
+        Route::get('/user/management/create', [UserManagementController::class, 'create'])
+            ->name('admin.user.management.create');
+
+        Route::post('/user/management/store', [UserManagementController::class, 'store'])
+            ->name('admin.user.management.store');
+
+        Route::get('/user/management/{user}/edit', [UserManagementController::class, 'edit'])
+            ->name('admin.user.management.edit');
+
+        Route::put('/user/management/{user}', [UserManagementController::class, 'update'])
+            ->name('admin.user.management.update');
+
+        Route::delete('/user/management/{user}', [UserManagementController::class, 'destroy'])
+            ->name('admin.user.management.destroy');
+
+        Route::post('/user/management/{user}/send-password-link',
+            [UserManagementController::class, 'sendPasswordLink']
+        )->name('admin.user.management.sendPasswordLink');
+
+        Route::get('/logs', [LogController::class, 'index'])
+            ->name('admin.logs.index');
+
+        Route::get('/terminals', [TerminalController::class, 'index'])
+            ->name('terminals.index');
+
+        Route::get('/terminals/create', [TerminalController::class, 'create'])
+            ->name('terminals.create');
+
+        Route::post('/terminals', [TerminalController::class, 'store'])
+            ->name('terminals.store');
+
+        Route::get('/terminals/{terminal}/edit', [TerminalController::class, 'edit'])
+            ->name('terminals.edit');
+
+        Route::put('/terminals/{terminal}', [TerminalController::class, 'update'])
+            ->name('terminals.update');
+
+        Route::delete('/terminals/{terminal}', [TerminalController::class, 'destroy'])
+            ->name('terminals.destroy');
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Password reset / set routes
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/reset-password/{token}', [AuthController::class, 'showSetPasswordForm'])
+    ->name('password.reset');
+
+Route::post('/reset-password', [AuthController::class, 'setPassword'])
+    ->name('password.store');

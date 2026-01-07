@@ -16,8 +16,8 @@ class EnsureUserIsAdmin
      */
     public function handle(Request $request, Closure $next): Response{
         $user = Auth::user();
-        if($user && $user->isAdmin()){
-            return redirect('/dashboard');
+        if($user && !$user->isAdmin()){
+            return redirect('/login');
         }
         return $next($request);
     }   

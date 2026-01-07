@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\CheckSession;
+use App\Http\Middleware\EnsureTwoFactorIsVerified;
+use App\Http\Middleware\EnsureUserIsAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,7 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(EnsureFrontendRequestsAreStateful::class);
-        $middleware->append(\App\Http\Middleware\EnsureUserIsAdmin::class);
+        $middleware->alias([
+            'admin' => EnsureUserIsAdmin::class,
+            '2fa'   => EnsureTwoFactorIsVerified::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
